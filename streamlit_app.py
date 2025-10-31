@@ -300,35 +300,25 @@ with col2:
     st.subheader("Your Score")
     col3, col4 = st.columns(2)
     with col3:
-        st.success(f"Correct\n{st.session_state.score}")
-        st.error(f"Incorrect\n{st.session_state.Incorrect_answer}")
-    with col4:
-        st.info(f"Skipped\n{st.session_state.skipped}")
-        st.warning(f"Total\n{st.session_state.question_counter-1}")
-    with col3:
         st.metric(
             label="✅Correct Answers",
             value=st.session_state.score,
             delta_color="normal"
         )
         st.metric(
-            label="⏭️Skipped Questions",
-            value=st.session_state.skipped,
-            #delta=f"Out of {st.session_state.question_counter - 1} Questions",
-
-        )
-
-
-    with col4:
-
-        st.metric(
             label="❌Incorrect Answers",
-            value=st.session_state.Incorrect_answer,
-            #delta=f"Out of {st.session_state.question_counter - 1} Questions",
+            value=st.session_state.Incorrect_answer
             delta_color="inverse"
         )
+
+    with col4:
         st.metric(
-            label="Total Questions",
+            label="⏭️Skipped",
+            value=st.session_state.skipped
+        )
+        
+        st.metric(
+            label="Total",
             value=st.session_state.question_counter-1,
         )
 
