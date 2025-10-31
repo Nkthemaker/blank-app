@@ -307,7 +307,7 @@ with col2:
         )
         st.metric(
             label="❌Incorrect Answers",
-            value=st.session_state.Incorrect_answer
+            value=st.session_state.Incorrect_answer,
             delta_color="inverse"
         )
 
@@ -319,7 +319,7 @@ with col2:
         
         st.metric(
             label="Total",
-            value=st.session_state.question_counter-1,
+            value=st.session_state.question_counter-1
         )
 
 
