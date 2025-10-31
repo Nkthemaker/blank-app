@@ -300,11 +300,11 @@ with col2:
     st.subheader("Your Score")
     col3, col4 = st.columns(2)
     with col3:
-        st.success(f"Correct Answers :\t{st.session_state.score}")
-        st.error(f"Incorrect Answers :\t{st.session_state.Incorrect_answer}")
+        st.success(f"Correct\n{st.session_state.score}")
+        st.error(f"Incorrect\n{st.session_state.Incorrect_answer}")
     with col4:
-        st.info(f"Skipped Questions :\t{st.session_state.skipped}")
-        st.warning(f"Total Queations : {st.session_state.question_counter-1}")
+        st.info(f"Skipped\n{st.session_state.skipped}")
+        st.warning(f"Total\n{st.session_state.question_counter-1}")
     with col3:
         st.metric(
             label="✅Correct Answers",
