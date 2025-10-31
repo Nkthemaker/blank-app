@@ -301,12 +301,12 @@ with col2:
     col3, col4 = st.columns(2)
     with col3:
         st.metric(
-            label="✅Correct Answers",
+            label="✅Correct",
             value=st.session_state.score,
             delta_color="normal"
         )
         st.metric(
-            label="❌Incorrect Answers",
+            label="❌Incorrect",
             value=st.session_state.Incorrect_answer,
             delta_color="inverse"
         )
@@ -318,7 +318,7 @@ with col2:
         )
         
         st.metric(
-            label="Total",
+            label="Total Questions",
             value=st.session_state.question_counter-1
         )
 
