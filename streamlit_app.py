@@ -1,17 +1,37 @@
 import streamlit as st
 import random
 import math
-import numpy as np  # Used for the more complex percentage type
+import numpy as np
 import time  # Added for timer functionality
 
 # --- Constants and Configuration ---
 SQUARE_RANGE = (1, 50)
-CUBE_RANGE = (1, 20)
+CUBE_RANGE = (1, 30)
 PERCENTAGE_BASE_RANGE = (100, 1000)
 QUIZ_DURATION_SECONDS = 60  # New constant for the timed challenge duration
 
-st.set_page_config(layout="wide", page_title="Daily Drill Master")
+JS_ENTER_KEY_FIX = """
+<script>
+    // Find the text input by its label/aria-label
+    const inputElement = document.querySelector('input[aria-label="Your Answer:"]');
 
+    // Find the primary submit button (it's the first primary button after the input)
+    const submitButton = document.querySelector('button[kind="primary"]');
+
+    if (inputElement && submitButton) {
+        inputElement.addEventListener('keydown', function(e) {
+        submitButton.click();
+            if (e.keyCode === 13) { 
+                e.preventDefault(); // Stop the default browser action (usually form submission)
+                 // Trigger the Streamlit button's on_click handler
+            }
+        });
+    }
+</script>
+"""
+
+st.set_page_config(layout="wide", page_title="Daily Drill Master")
+st.markdown(JS_ENTER_KEY_FIX, unsafe_allow_html=True)
 
 # --- 1. Initialization and Session State Management ---
 
@@ -19,6 +39,8 @@ def initialize_session_state():
     """Initializes all necessary session state variables."""
     if 'score' not in st.session_state:
         st.session_state.score = 0
+        st.session_state.Incorrect_answer = 0
+        st.session_state.skipped = 0
     if 'mode' not in st.session_state:
         st.session_state.mode = 'square'  # Default mode
     if 'current_q' not in st.session_state:
@@ -47,32 +69,27 @@ def set_mode(new_mode, is_timed=False):
     """Changes the practice mode and resets the quiz state."""
     st.session_state.mode = new_mode
     st.session_state.score = 0
+    st.session_state.Incorrect_answer = 0
+    st.session_state.skipped = 0
     st.session_state.feedback = ""
     st.session_state.question_counter = 0
     # Reset timer states
     st.session_state.quiz_start_time = 0.0
     st.session_state.quiz_ended = False
     st.session_state.is_timed_mode = is_timed
-
     # NEW: Clear input on mode change
     st.session_state.current_user_input = ""
-
     # Generate the first question for the new mode
     generate_new_question()
 
 
 # --- 2. Question Generation Functions ---
-
 def generate_square_q():
-    """Generates a random square question (N^2)."""
     N = random.randint(*SQUARE_RANGE)
     question = f"What is the **square** of **{N}**?"
     answer = N * N
     return question, answer
-
-
 def generate_cube_q():
-    """Generates a random cube question (N^3)."""
     N = random.randint(*CUBE_RANGE)
     question = f"What is the **cube** of **{N}**?"
     answer = N * N * N
@@ -120,8 +137,6 @@ def generate_mixed_q():
 
 
 def generate_new_question():
-    """Calls the appropriate generator based on the current mode and updates state."""
-
     if st.session_state.mode == 'square':
         q, a = generate_square_q()
     elif st.session_state.mode == 'cube':
@@ -186,6 +201,7 @@ def check_answer(user_input):
     else:
         # Wrong Answer - Show the correct answer
         # Use simple integer if the correct answer is an integer, otherwise display float
+        st.session_state.Incorrect_answer += 1
         display_ans = int(correct_ans) if correct_ans == int(correct_ans) else correct_ans
         st.session_state.feedback = f"❌ **Wrong.** The correct answer was: **{display_ans}**."
 
@@ -195,6 +211,7 @@ def check_answer(user_input):
 
 # NEW: Wrapper function to handle skipping and clearing the input box
 def handle_skip_question():
+    st.session_state.skipped += 1
     skip_question()
     # CRITICAL FIX: Explicitly reset the input's value state after skipping
     st.session_state.current_user_input = ""
@@ -208,7 +225,7 @@ def skip_question():
     display_ans = int(correct_ans) if correct_ans == int(correct_ans) else correct_ans
 
     # Update feedback to show that the question was skipped and provide the answer
-    st.session_state.feedback = f"⏭️ **Skipped.** The correct answer was: **{display_ans}**."
+    st.session_state.feedback = f"⏭️ **Skipped.** The correct answer :**{display_ans}**."
 
     # Generate the next question
     generate_new_question()
@@ -249,13 +266,11 @@ with col1:
 
     st.subheader(f"Question #{st.session_state.question_counter}")
     st.markdown(f"### {st.session_state.current_q}")
-
     # --- REPLACED st.form with standard st.text_input and st.button for manual state control ---
-
     # Input for the user's answer (key holds the value, value binds it to the state)
     st.text_input(
         label="Your Answer:",
-        placeholder="Type your number here...",
+        placeholder="Type your Answer here...",
         # KEY holds the value in session state (must be unique)
         key="current_user_input",
         autocomplete="off",
@@ -266,13 +281,12 @@ with col1:
 
     # Submit button (uses the new handler to check and clear)
     st.button(
-        label="Check Answer",
+        label="Submit",
         on_click=handle_check_answer,  # Use wrapper to check and clear
         type="primary",
         use_container_width=True,
         disabled=st.session_state.quiz_ended and st.session_state.is_timed_mode
     )
-
     # Skip button (uses the new handler to skip and clear)
     st.button(
         label="Skip Question ⏭️",
@@ -284,12 +298,40 @@ with col1:
 
 with col2:
     st.subheader("Your Score")
-    st.metric(
-        label="Correct Answers",
-        value=st.session_state.score,
-        delta=f"Out of {st.session_state.question_counter - 1} Attempts",
-        delta_color="off"
-    )
+    col3, col4 = st.columns(2)
+    with col3:
+        st.success(f"Correct Answers :\t{st.session_state.score}")
+        st.error(f"Incorrect Answers :\t{st.session_state.Incorrect_answer}")
+    with col4:
+        st.info(f"Skipped Questions :\t{st.session_state.skipped}")
+        st.warning(f"Total Queations : {st.session_state.question_counter-1}")
+    with col3:
+        st.metric(
+            label="✅Correct Answers",
+            value=st.session_state.score,
+            delta_color="normal"
+        )
+        st.metric(
+            label="⏭️Skipped Questions",
+            value=st.session_state.skipped,
+            #delta=f"Out of {st.session_state.question_counter - 1} Questions",
+
+        )
+
+
+    with col4:
+
+        st.metric(
+            label="❌Incorrect Answers",
+            value=st.session_state.Incorrect_answer,
+            #delta=f"Out of {st.session_state.question_counter - 1} Questions",
+            delta_color="inverse"
+        )
+        st.metric(
+            label="Total Questions",
+            value=st.session_state.question_counter-1,
+        )
+
 
     # Timer Display Logic (NEW)
     if st.session_state.is_timed_mode and st.session_state.quiz_start_time > 0:
